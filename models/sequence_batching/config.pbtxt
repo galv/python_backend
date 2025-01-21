@@ -1,0 +1,93 @@
+# Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: "sequence_batching"
+backend: "python"
+max_batch_size: 2
+
+parameters [
+  { key: "FORCE_CPU_ONLY_INPUT_TENSORS"
+    value: {string_value: "no"}
+  }
+]
+
+input [
+  {
+    name: "my_input"
+    data_type: TYPE_INT32
+    dims: [1]
+    reshape { shape: [] }
+  }
+]
+
+output [
+  {
+    name: "my_output"
+    data_type: TYPE_INT32
+    dims: [1]
+    reshape { shape: [] }
+  }
+]
+
+sequence_batching {
+  # 5s
+  max_sequence_idle_microseconds: 5000000
+  control_input [
+    {
+      name: "START"
+      control [
+        {
+          kind: CONTROL_SEQUENCE_START
+          fp32_false_true: [ 0, 1 ]
+        }
+      ]
+    },
+    {
+      name: "END"
+      control [
+        {
+          kind: CONTROL_SEQUENCE_END
+          fp32_false_true: [ 0, 1 ]
+        }
+      ]
+    },
+    {
+      name: "CORRID"
+      control [
+        {
+          kind: CONTROL_SEQUENCE_CORRID
+          data_type: TYPE_UINT64
+        }
+      ]
+    }
+  ]
+  # https://github.com/triton-inference-server/server/blob/main/docs/user_guide/architecture.md#scheduling-strategies
+  oldest {
+    # this is the maximum number of candidate sequences for a single
+    # instance. I see no reason why this shouldn't always be
+    # max_batch_size. After all, this gives you flexibility to move
+    # candidate sequencess of the backlog to whichever instance frees
+    # up first.
+    max_candidate_sequences: 2
+    # 2s -> Is this simply the amount of time before which something returns to the backlog? No. sequences are simply discarded. They are not returned to the backlog.
+    max_queue_delay_microseconds: 2000000
+  }
+}
+
+instance_group [
+    {
+      count: 1
+      kind: KIND_GPU
+    }
+]
