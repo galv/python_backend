@@ -3,7 +3,7 @@
 Start the server in one terminal:
 
 ```
-docker run -w workspace/python_backend/ -v $PWD:/workspace/python_backend/ --shm-size=1g --ulimit memlock=-1 -p 8000:8000 -p 8001:8001 -p 8002:8002 --ulimit stack=67108864 -ti nvcr.io/nvidia/tritonserver:24.09-py3 tritonserver --model-repository models
+docker run -w /workspace/python_backend/ -v $PWD:/workspace/python_backend/ --shm-size=1g --ulimit memlock=-1 -p 8000:8000 -p 8001:8001 -p 8002:8002 --ulimit stack=67108864 -ti nvcr.io/nvidia/tritonserver:24.09-py3 tritonserver --model-repository models
 ```
 
 Then run the client in another terminal (make sure that the server is
